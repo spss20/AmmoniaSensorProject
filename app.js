@@ -10,14 +10,14 @@ io.on("connection", (socket) => {
   console.log("A user connected", socket.id);
 });
 
-app.listen(3000, () => {
+app.listen(5001, () => {
   console.log("listening on *:3000");
 });
 
 //Setting variabes from data.json
 let RO, m, b, RO_RS_RATIO, RL, min, max;
 
-const stream = fs.readFileSync("/Users/ssoftwares/Dobby/PhpProjects/sensor/data.json");
+const stream = fs.readFileSync("/home/debian/public_html/data.json");
 const values = JSON.parse(stream);
 
 RO = parseFloat(values.kValue) || 0;
@@ -30,18 +30,18 @@ max = parseFloat(values.max) || 0;
 
 console.log({ RO, m, b, RO_RS_RATIO, RL, min, max });
 
-setInterval(parseData, 1000);
+setInterval(parseData, 1400);
 
 function parseData() {
   let voltageSum = 0;
 
-  for (let i = 0; i < 10; i++) {
+  for (let i = 0; i < 200; i++) {
     const analogValue = bonescript.analogRead("A0");
     // const analogValue = getVoltage();
     voltageSum += analogValue;
   }
 
-  const Vrl = 1.8 * voltageSum; //Vrl = Voltage
+  const Vrl = 1.8 * voltageSum/200; //Vrl = Voltage
   const Rs = (5.0 / Vrl - 1) * RL;
 
   if (RO == 0) {
@@ -61,7 +61,7 @@ function parseData() {
     } else {
       publishData(PPM, Vrl, "NORMAL", "green", RO);
     }
-    console.log({ Vrl, Rs, RO, ratio, PPM , maximumVoltage , x });
+    console.log({ Vrl, Rs, RO, ratio, PPM});
   }
 }
 
@@ -69,7 +69,6 @@ function publishData(ppm, voltage, status, color, kValue) {
   const data = {
     ppm: ppm.toFixed(3), voltage: voltage.toFixed(3), status, color, kValue: kValue.toFixed(4)
   };
-  console.log(data);
   io.emit("sensor", data);
 }
 
