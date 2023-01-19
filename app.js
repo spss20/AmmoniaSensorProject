@@ -4,22 +4,26 @@ const app = http.createServer();
 const { Server } = require("socket.io");
 const io = new Server(app);
 const bonescript = require("bonescript");
+const axios = require('axios');
+require('dotenv').config();
 
 //Setting up Socket
 io.on("connection", (socket) => {
   console.log("A user connected", socket.id);
 });
 
-app.listen(5001, () => {
-  console.log("listening on *:3000");
+app.listen(process.env.PORT, () => {
+  console.log("listening on *:" + process.env.PORT);
 });
 
 //Setting variabes from data.json
-let RO, m, b, RO_RS_RATIO, RL, min, max;
+let sap_id, RO, m, b, RO_RS_RATIO, RL, min, max;
+let data;
 
-const stream = fs.readFileSync("/home/debian/public_html/data.json");
+const stream = fs.readFileSync(process.env.DATA_PATH);
 const values = JSON.parse(stream);
 
+sap_id = values.sap_id;
 RO = parseFloat(values.kValue) || 0;
 m = parseFloat(values.m) || 0;
 b = parseFloat(values.b) || 0;
@@ -27,10 +31,10 @@ RO_RS_RATIO = parseFloat(values.RO_RS_RATIO) || 1;
 RL = parseFloat(values.RL) || 0;
 min = parseFloat(values.min) || 0;
 max = parseFloat(values.max) || 0;
-
 console.log({ RO, m, b, RO_RS_RATIO, RL, min, max });
 
 setInterval(parseData, 1400);
+setInterval(publishToServer, 10 * 1000);
 
 function parseData() {
   let voltageSum = 0;
@@ -41,15 +45,17 @@ function parseData() {
     voltageSum += analogValue;
   }
 
-  const Vrl = 1.8 * voltageSum/200; //Vrl = Voltage
+  const Vrl = 1.8 * voltageSum / 200; //Vrl = Voltage
   const Rs = (5.0 / Vrl - 1) * RL;
 
-  if (RO == 0) {
+  if (!sap_id) {
+    publishData(0, Vrl, "DEVICE NOT CONFIGURED", "red", 0);
+  } else if (RO == 0) {
     if (RO_RS_RATIO != 0) {
       const kValue = Rs / RO_RS_RATIO;
-      publishData(0, Vrl, "NOT CALIBRATED", "red", kValue);
+      publishData(0, Vrl, "DEVICE NOT CALIBRATED", "red", kValue);
     } else {
-      publishData(0, Vrl, "NOT CALIBRATED", "red", 0);
+      publishData(0, Vrl, "DEVICE NOT CALIBRATED", "red", 0);
     }
   } else {
     const ratio = Rs / RO;
@@ -61,15 +67,35 @@ function parseData() {
     } else {
       publishData(PPM, Vrl, "NORMAL", "green", RO);
     }
-    console.log({ Vrl, Rs, RO, ratio, PPM});
+    console.log({ Vrl, Rs, RO, ratio, PPM });
   }
 }
 
 function publishData(ppm, voltage, status, color, kValue) {
-  const data = {
+  data = {
     ppm: ppm.toFixed(3), voltage: voltage.toFixed(3), status, color, kValue: kValue.toFixed(4)
   };
   io.emit("sensor", data);
+}
+
+function publishToServer() {
+  if (sap_id) {
+    axios.post(process.env.BASE_URL + '/api/amonium/add_new', {
+      sap_id,
+      value: data.ppm,
+      k_value: data.kValue,
+      status: data.status
+    }).then((res) => {
+      console.log("Data updated to server");
+      console.log(res.status);
+      console.log(res.data);
+    }, (err) => {
+      console.log("error while updating data to server", err);
+    })
+
+  } else {
+    console.log("Sap ID not configured");
+  }
 }
 
 //Simulator Functions
