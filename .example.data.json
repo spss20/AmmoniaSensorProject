@@ -1,12 +1,12 @@
 {
-    "sap_id": "MANESAR-2",
-    "kValue": "78",
+    "sap_id": "",
+    "kValue": "0",
     "m": "-0.515482121423",
     "b": "0.42992639673",
     "RO_RS_RATIO": "3.6",
     "RL": "10",
     "min": "5",
     "max": "50",
-    "title": "Amonia",
+    "title": "Ammonia Gas Sensor",
     "footer": "Galler"
 }
