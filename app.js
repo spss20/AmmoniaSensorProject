@@ -34,7 +34,7 @@ max = parseFloat(values.max) || 0;
 console.log({ RO, m, b, RO_RS_RATIO, RL, min, max });
 
 setInterval(parseData, 1400);
-setInterval(publishToServer, 10 * 1000);
+setInterval(publishToServer, 60 * 1000);
 
 function parseData() {
   let voltageSum = 0;
