@@ -83,7 +83,7 @@ function publishData(ppm, voltage, status, color, kValue) {
 
 function publishToServer() {
   if (sap_id) {
-    axios.post(process.env.BASE_URL + '/api/amonium/add_new', {
+    axios.post(SERVER_URL + '/api/amonium/add_new', {
       sap_id,
       value: data.ppm,
       k_value: data.kValue,
